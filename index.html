@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Vzp vac : windows vulnerability assessment collection tool" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Vzp vac</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/fordpref/vzp_vac">View on GitHub</a>
+
+          <h1 id="project_title">Vzp vac</h1>
+          <h2 id="project_tagline">windows vulnerability assessment collection tool</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/fordpref/vzp_vac/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/fordpref/vzp_vac/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="vzp_vac" class="anchor" href="#vzp_vac"><span class="octicon octicon-link"></span></a>vzp_vac</h1>
+
+<p>windows vulnerability assessment collection tool</p>
+
+<p>very initial stages...use at own risk.</p>
+
+<p>The tool is designed to be run from the command line without any switches.</p>
+
+<p>To run the tool you need the Sysinternals tools suite in a single directory.  The script also needs access to the normal net.exe, sysinfo.exe, netstat.exe, nslookup.exe, ipconfig.exe, nebtstat.exe, and more command line tools in windows.  If the system doesn't have access to those, you may want add those (check them on several versions of windows) to the tools directory you create.  prepare to have the tools directory in a read only network share if you want to run this script remotely without having to transfer tons of files.</p>
+
+<p>The script will ask you for the location your tools directory and do a simple validation of that path.</p>
+
+<p>The script will then create a local directory on the system being evaluated called c:\assessment and then a sub directory with a date-time-systemname-ip folder.</p>
+
+<p>The script also creates all the frustrating sysinternals EULAAccpeted...so be warned that it is going to create and delete that key, sub keys, and values under HKEY_CURRENT_USER\Software</p>
+
+<p>The script will then run a number of utilities to help give you good assessment data on the system to help you identify items or issues you may have missed with other tools.</p>
+
+<p>It will try to output the data to raw files as well as comma separated files that can be imported into a database.  </p>
+
+<p>Soon I hope to have it working with SQLite to go ahead and create that database and have several canned reports to spit out.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Vzp vac maintained by <a href="https://github.com/fordpref">fordpref</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
