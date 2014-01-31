@@ -241,15 +241,19 @@ def collection():
         subprocess.call('ipconfig.exe /all', stdout=outfile)
     
     #get AD DC and domain name information
-    dc = win32security.DsGetDcName()
-    if dc:
-        dcfile = open(sqlname + '-wkstation-AD-info.csv', 'w')
-        header = "ip/key,DomainControllerAddress,DnsForestName,DomainName,DomainControllerName"
-        dcfile.write(header + "\n")
-        dcfile.write(ipaddr + "," + dc['DomainControllerAddress'][2:] + "," + 
-                     dc['DnsForestName'] + "," + dc['DomainName'] + "," + dc['DomainControllerName'][2:]
-                     + "\n")
-        dcfile.close
+    try:
+        dc = win32security.DsGetDcName()
+        if dc:
+            dcfile = open(sqlname + '-wkstation-AD-info.csv', 'w')
+            header = "ip/key,DomainControllerAddress,DnsForestName,DomainName,DomainControllerName"
+            dcfile.write(header + "\n")
+            dcfile.write(ipaddr + "," + dc['DomainControllerAddress'][2:] + "," + 
+                         dc['DnsForestName'] + "," + dc['DomainName'] + "," + dc['DomainControllerName'][2:]
+                         + "\n")
+            dcfile.close
+    except:
+        pass
+    
     
     #get IP routing informatino
     with open(bname + '-Routes.txt', 'w') as outfile:
@@ -393,34 +397,47 @@ def collection():
     for x in range(len(users[0])):
         groups = NetUserGetLocalGroups(None, users[0][x]['name'])
         groups = ",".join(groups) + "\n"
-        line = ",".join((ipaddr, users[0][x]['name'], users[0][x]['full_name'],
-                        str(users[0][x]['password_age']/60/60/24), str(users[0][x]['num_logons']),
-                        time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['acct_expires'])),
-                        time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['last_logon'])),
-                        groups))
+        if users[0][x]['acct_expires']== -1:
+            line = ",".join((ipaddr, users[0][x]['name'], users[0][x]['full_name'],
+                            str(users[0][x]['password_age']/60/60/24),
+                            str(users[0][x]['num_logons']),
+                            'NEVER',
+                            time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['last_logon'])),
+                            groups))
+        else:
+            line = ",".join((ipaddr, users[0][x]['name'], users[0][x]['full_name'],
+                             str(users[0][x]['password_age']/60/60/24),
+                             str(users[0][x]['num_logons']),
+                             time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['acct_expires'])),
+                             time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['last_logon'])),
+                             groups))
         sqlfile.write(line)
     
     #get AD groups and membership if DC present
-    dc = NetGetDCName()
-    header = 'DC,name,full_name,password_age,num_logons,acct_expires,last_logon,groups\n'
-    sqlfile = open(sqlname + "-AD-Users.csv", "w")
-    sqlfile.write(header)
-    dc = NetGetDCName()
-    users = NetUserEnum(dc,2)
-    adgroups = []
-    if dc:
-        for x in range(len(users[0])):
-            groups = NetUserGetGroups(dc, users[0][x]['name'])
-            for y in range(len(groups)):
-                adgroups.append(str(groups[y][0]))
-            groups = ",".join(adgroups) + "\n"
-            adgroups = []
-            line = ",".join((ipaddr, users[0][x]['name'], users[0][x]['full_name'],
-                            str(users[0][x]['password_age']/60/60/24), str(users[0][x]['num_logons']),
-                            time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['acct_expires'])),
-                            time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['last_logon'])),
-                            groups))
-            sqlfile.write(line)
+    try:
+        dc = NetGetDCName()
+        header = 'DC,name,full_name,password_age,num_logons,acct_expires,last_logon,groups\n'
+        sqlfile = open(sqlname + "-AD-Users.csv", "w")
+        sqlfile.write(header)
+        #dc = NetGetDCName()
+        users = NetUserEnum(dc,2)
+        adgroups = []
+        if dc:
+            for x in range(len(users[0])):
+                groups = NetUserGetGroups(dc, users[0][x]['name'])
+                for y in range(len(groups)):
+                    adgroups.append(str(groups[y][0]))
+                groups = ",".join(adgroups) + "\n"
+                adgroups = []
+                line = ",".join((ipaddr, users[0][x]['name'], users[0][x]['full_name'],
+                                str(users[0][x]['password_age']/60/60/24), str(users[0][x]['num_logons']),
+                                time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['acct_expires'])),
+                                time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['last_logon'])),
+                                groups))
+                sqlfile.write(line)#code
+    except:
+        pass
+    
         
     
     #get local groups and group membership
@@ -443,22 +460,25 @@ def collection():
     
     
     #get AD groups and membership if DC present
-    dc = NetGetDCName()
-    adgroups = []
-    adgroup = ""
-    users = []
-    sqlfile = open(sqlname + '-AD-Groups.csv', 'w')
-    header = 'DC,ADGroupName,Users\n'
-    sqlfile.write(header)
-    if dc:
-        groups = NetGroupEnum(dc,2)
-        for x in range(len(groups[0])):
-            users = NetGroupGetUsers(dc,str(groups[0][x]['name']), 1)
-            for y in range(len(users[0])):
-                adgroups.append(str(users[0][y]['name']))
-            adgroup = dc + "," + str(groups[0][x]['name']) + "," + ",".join(adgroups) + "\n"
-            sqlfile.write(adgroup)
-            adgroups = []
+    try:
+        dc = NetGetDCName()
+        adgroups = []
+        adgroup = ""
+        users = []
+        sqlfile = open(sqlname + '-AD-Groups.csv', 'w')
+        header = 'DC,ADGroupName,Users\n'
+        sqlfile.write(header)
+        if dc:
+            groups = NetGroupEnum(dc,2)
+            for x in range(len(groups[0])):
+                users = NetGroupGetUsers(dc,str(groups[0][x]['name']), 1)
+                for y in range(len(users[0])):
+                    adgroups.append(str(users[0][y]['name']))
+                adgroup = dc + "," + str(groups[0][x]['name']) + "," + ",".join(adgroups) + "\n"
+                sqlfile.write(adgroup)
+                adgroups = []
+    except:
+        pass
     
     
     #Get local shares
