@@ -4,6 +4,8 @@ from datetime import datetime
 from subprocess import PIPE
 from win32netcon import *
 from psutil import *
+from win32net import *
+
 
 
 
@@ -185,7 +187,7 @@ def collection():
     sqlname = sqldir + aname
     
     
-    
+    #Start by getting System Info
     infile = subprocess.Popen("systeminfo.exe", stdout=PIPE, stderr=PIPE)
     infile = infile.communicate()[0].split("\n")
     outfile = open(bname + "-systeminfo.txt", 'w')
@@ -225,6 +227,8 @@ def collection():
     rawfile = open(bname + "-env-variables.txt", 'w')
     header = "key/ip,VarName,Value\n"
     outfile.write(header)
+    
+    #Get environment variables
     for key in os.environ:
         outfile.write(ipaddr + "," + key + "," + os.environ[key] + "\n")
         rawfile.write(key + ":\t" + os.environ[key] + "\n")
@@ -240,7 +244,7 @@ def collection():
     dc = win32security.DsGetDcName()
     if dc:
         dcfile = open(sqlname + '-wkstation-AD-info.csv', 'w')
-        header = "IP,DomainControllerAddress,DnsForestName,DomainName,DomainControllerName"
+        header = "ip/key,DomainControllerAddress,DnsForestName,DomainName,DomainControllerName"
         dcfile.write(header + "\n")
         dcfile.write(ipaddr + "," + dc['DomainControllerAddress'][2:] + "," + 
                      dc['DnsForestName'] + "," + dc['DomainName'] + "," + dc['DomainControllerName'][2:]
@@ -313,7 +317,7 @@ def collection():
             flag = 1
             flag3 = 1
         elif flag == 5:
-            outfile = open(sqlname + '-ipv6-persisten-routes.csv', 'w')
+            outfile = open(sqlname + '-ipv6-persistent-routes.csv', 'w')
             outfile.write(line)
             outfile.write('\nIf there are IPV6 persistent routes, capture and re-write this module')
 
@@ -352,14 +356,19 @@ def collection():
             line.pop(4)
             udp_listen.write(",".join(line) + '\n')
         elif line and line[0] == "TCP" and line[3] == "LISTENING":
-            process = Process(int(line[4]))
+            print "why stop? \n"
             try:
-                cmd = process.exe
-                line.append(cmd)
+                process = Process(int(line[4]))
+                try:
+                    cmd = process.exe
+                    line.append(cmd)
+                except:
+                    process = subprocess.Popen([path + 'tcpvcon.exe', '-a', '-c', '-n', line[4]], stdout=PIPE)
+                    process = process.communicate()[0].split(",")
+                    line.append(process[1])
             except:
-                process = subprocess.Popen([path + 'tcpvcon.exe', '-a', '-c', '-n', line[4]], stdout=PIPE)
-                process = process.communicate()[0].split(",")
-                line.append(process[1])
+                cmd = 'orphaned process'
+                line.append(cmd)
             line.insert(0, ipaddr)
             tcp_listen.write(",".join(line) + '\n')
         elif line and line[0] == "UDP" and line[2] == "*:*":
@@ -376,8 +385,90 @@ def collection():
     tcp_listen.close
     udp_listen.close
 
+    #get local users and group membership
+    users = NetUserEnum(None,2)
+    header = "ip/key,name,full_name,password_age,num_logons,acct_expires,last_logon,groups\n"
+    sqlfile = open(sqlname + '-localusers.csv', 'w')
+    sqlfile.write(header)
+    for x in range(len(users[0])):
+        groups = NetUserGetLocalGroups(None, users[0][x]['name'])
+        groups = ",".join(groups) + "\n"
+        line = ",".join((ipaddr, users[0][x]['name'], users[0][x]['full_name'],
+                        str(users[0][x]['password_age']/60/60/24), str(users[0][x]['num_logons']),
+                        time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['acct_expires'])),
+                        time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['last_logon'])),
+                        groups))
+        sqlfile.write(line)
+    
+    #get AD groups and membership if DC present
+    dc = NetGetDCName()
+    header = 'DC,name,full_name,password_age,num_logons,acct_expires,last_logon,groups\n'
+    sqlfile = open(sqlname + "-AD-Users.csv", "w")
+    sqlfile.write(header)
+    dc = NetGetDCName()
+    users = NetUserEnum(dc,2)
+    adgroups = []
+    if dc:
+        for x in range(len(users[0])):
+            groups = NetUserGetGroups(dc, users[0][x]['name'])
+            for y in range(len(groups)):
+                adgroups.append(str(groups[y][0]))
+            groups = ",".join(adgroups) + "\n"
+            adgroups = []
+            line = ",".join((ipaddr, users[0][x]['name'], users[0][x]['full_name'],
+                            str(users[0][x]['password_age']/60/60/24), str(users[0][x]['num_logons']),
+                            time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['acct_expires'])),
+                            time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['last_logon'])),
+                            groups))
+            sqlfile.write(line)
+        
+    
+    #get local groups and group membership
+    groups = []
+    header = "ip/key,group_name,users\n"
+    sqlfile = open(sqlname + '-localgroups.csv', 'w')
+    sqlfile.write(header)
+    line = subprocess.Popen('net.exe localgroup', stdout=PIPE)
+    line = line.communicate()[0].split("\n")
+    for x in range(len(line)):
+        if line[x].startswith('*'):
+            groups.append(line[x][1:-1])
+        
+    for x in range(len(groups)):
+        temp = NetLocalGroupGetMembers(socket.gethostname(), groups[x], 1)
+        for y in range(len(temp[0])):
+            groups[x] = ",".join((groups[x], temp[0][y]['name']))
+        groups[x] = ",".join((ipaddr, groups[x], "\n"))
+        sqlfile.write(groups[x])
     
     
+    #get AD groups and membership if DC present
+    dc = NetGetDCName()
+    adgroups = []
+    adgroup = ""
+    users = []
+    sqlfile = open(sqlname + '-AD-Groups.csv', 'w')
+    header = 'DC,ADGroupName,Users\n'
+    sqlfile.write(header)
+    if dc:
+        groups = NetGroupEnum(dc,2)
+        for x in range(len(groups[0])):
+            users = NetGroupGetUsers(dc,str(groups[0][x]['name']), 1)
+            for y in range(len(users[0])):
+                adgroups.append(str(users[0][y]['name']))
+            adgroup = dc + "," + str(groups[0][x]['name']) + "," + ",".join(adgroups) + "\n"
+            sqlfile.write(adgroup)
+            adgroups = []
+    
+    
+    #Get local shares
+    header = 'ip/key,sharename,path\n'
+    sqlfile = open(sqlname + '-localshares.csv', 'w')
+    sqlfile.write(header)
+    line = NetShareEnum(socket.gethostname(),2)
+    for x in range(len(line[0])):
+        share = ",".join((ipaddr, str(line[0][x]['netname']), str(line[0][x]['path']), "\n"))
+        sqlfile.write(share)
     
 
 #print out usage message
