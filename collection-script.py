@@ -185,8 +185,7 @@ def collection():
     commandline = ""
     bname = dir + aname
     sqlname = sqldir + aname
-    log = dir + 'assessment-log.txt'
-    logfile = open(log, 'w')
+    logfile = open(dir + "assessment-log.txt", 'w')
     
     
     #Start by getting System Info
@@ -533,7 +532,7 @@ def collection():
         #    subprocess.call('nbtstat.exe -S', stdout=outfile)
     
     #get firewall info
-    with open(bname + '-firewall-config', 'w') as outfile:
+    with open(bname + '-firewall-config.txt', 'w') as outfile:
         subprocess.call('netsh.exe firewall show config', stdout=outfile)
     logfile.write('firewall module                  Passed\n')
     """
@@ -683,6 +682,7 @@ def collection():
     """
     Add post processing
     """
+    logfile.close
     
 
 #print out usage message
