@@ -489,6 +489,77 @@ def collection():
     for x in range(len(line[0])):
         share = ",".join((ipaddr, str(line[0][x]['netname']), str(line[0][x]['path']), "\n"))
         sqlfile.write(share)
+
+        
+    #Get password policy
+    with open(bname + '-password-policy.txt', 'w') as outfile:
+        subprocess.call('net.exe accounts', stdout=outfile)
+    """
+    Add post processing
+    """
+    
+    #NBTSTAT
+    try:
+        with open(bname + '-nbtstat-cachednames.txt', 'w') as outfile:
+            subprocess.call('nbtstat.exe -r', stdout=outfile)
+        with open(bname + '-nbtstat-remotesessions.txt', 'w') as outfile:
+            subprocess.call('nbtstat.exe -S', stdout=outfile)
+    except:
+        pass
+        #with open(bname + '-nbtstat-cachednames.txt', 'w') as outfile:
+        #    subprocess.call('nbtstat.exe -r', stdout=outfile)
+        #with open(bname + '-nbtstat-remotesessions.txt', 'w') as outfile:
+        #    subprocess.call('nbtstat.exe -S', stdout=outfile)
+    
+    #get firewall info
+    with open(bname + '-firewall-config', 'w') as outfile:
+        subprocess.call('netsh.exe firewall show config', stdout=outfile)
+    """
+    Add post processing
+    """
+
+
+    #Get task / process list
+    with open(bname + '-tasks-tasklist.txt', 'w') as outfile:
+        subprocess.call('tasklist.exe', stdout=outfile)
+    with open(bname + '-tasks-wmic.txt', 'w') as outfile:
+        subprocess.call('wmic.exe process list', stdout=outfile)
+    with open(bname + '-tasks-pslist-tree.txt', 'w') as outfile:
+        subprocess.call('pslist.exe -t', stdout=outfile)
+    with open(bname + '-tasks-pslist-detailed.txt', 'w') as outfile:
+        subprocess.call('pslist.exe -x', stdout=outfile)
+    """
+    Add post processing
+    """
+    
+    #sysinternals
+    with open(bname + '-whois-loggedon.txt', 'w') as outfile:
+        subprocess.call('psloggedon.exe', stdout=outfile)
+    with open(bname + '-local-services.txt', 'w') as outfile:
+        subprocess.call('psservice.exe', stdout=outfile)
+    with open(bname + '-services-config.txt', 'w') as outfile:
+        subprocess.call('psservice.exe config', stdout=outfile)
+    with open(sqlname + '-tcpview.csv', 'w') as outfile:
+        subprocess.call('tcpvcon.exe -a -c -n', stdout=outfile)
+    with open(sqlname + '-system-event-log.csv', 'w') as outfile:
+        subprocess.call('psloglist.exe -s system', stdout=outfile)
+    with open(sqlname + '-application-event-log.csv', 'w') as outfile:
+        subprocess.call('psloglist.exe -s application', stdout=outfile)
+    with open(sqlname + '-security-event-log.csv', 'w') as outfile:
+        subprocess.call('psloglist.exe -s security', stdout=outfile)
+    with open(sqlname + '-autoruns.csv', 'w') as outfile:
+        subprocess.call('autorunsc.exe -a -c -m', stdout=outfile)
+    with open(bname + '-open-handles.txt', 'w') as outfile:
+        subprocess.call('handle.exe -a', stdout=outfile)
+    with open(bname + '-logonsessions.txt', 'w') as outfile:
+        subprocess.call('logonsessions.exe', stdout=outfile)
+    with open(bname + '-files-opened-remotely.txt', 'w') as outfile:
+        subprocess.call('psfile.exe', stdout=outfile)
+    with open(sqlname + '-installed-apps-patches.csv', 'w') as outfile:
+        subprocess.call('psinfo.exe', stdout=outfile)
+    """
+    Add post processing
+    """
     
 
 #print out usage message
