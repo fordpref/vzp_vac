@@ -185,6 +185,8 @@ def collection():
     commandline = ""
     bname = dir + aname
     sqlname = sqldir + aname
+    log = dir + 'assessment-log.txt'
+    logfile = open(log, 'w')
     
     
     #Start by getting System Info
@@ -218,9 +220,11 @@ def collection():
             outfile.close
             sqlfile.write("\n" + ipaddr + sqlline)
             sqlfile.close
+    logfile.write('Systeminfo module                Passed\n')
     
     #Get the Software Registry        
     infile = subprocess.Popen("regedit.exe /E /S " + bname + "-Software-Registry.reg HKEY_LOCAL_MACHINE\\Software")
+    logfile.write('Software Reg Module              Passed\n')
     
     #get the environment variables CSV and raw file
     outfile = open(sqlname + "-environment-variables.csv", 'w')
@@ -234,11 +238,13 @@ def collection():
         rawfile.write(key + ":\t" + os.environ[key] + "\n")
     rawfile.close
     outfile.close
+    logfile.write('Environment Var Module           Passed\n')
     
     
     #get IP and Interface information
     with open(bname + '-ipconfig.txt', 'w') as outfile:
         subprocess.call('ipconfig.exe /all', stdout=outfile)
+    logfile.write('IPConfig Module                  Passed\n')
     
     #get AD DC and domain name information
     try:
@@ -251,14 +257,17 @@ def collection():
                          dc['DnsForestName'] + "," + dc['DomainName'] + "," + dc['DomainControllerName'][2:]
                          + "\n")
             dcfile.close
+            logfile.write('AD DC/Name Module                Passed\n')
     except:
+        logfile.write('AD DC/Name Module                failed/no domain\n')
         pass
     
     
     #get IP routing informatino
     with open(bname + '-Routes.txt', 'w') as outfile:
         subprocess.call('netstat.exe -nr ', stdout=outfile)
-       
+    logfile.write('IP Route Raw Module              Passed\n')
+    
     #insert IP ROUTING csv table here
     infile = open(bname + '-Routes.txt', 'r')
     for line in infile:
@@ -324,15 +333,17 @@ def collection():
             outfile = open(sqlname + '-ipv6-persistent-routes.csv', 'w')
             outfile.write(line)
             outfile.write('\nIf there are IPV6 persistent routes, capture and re-write this module')
-
+    logfile.write('IP route CSV Module              Passed\n')
     
     #Get Network Listeners Raw
     with open(bname + '-TCP-NetworkListeners.txt', 'w') as outfile:
         p1 = subprocess.Popen('netstat.exe -nao', stdout=PIPE)
         p2 = subprocess.Popen('findstr /c:LISTEN', stdin=p1.stdout, stdout=outfile)
+    logfile.write('TCP Netstat Raw Module           Passed\n')
     with open(bname + '-UDP-NetworkListeners.txt', 'w') as outfile:
         p1 = subprocess.Popen('netstat.exe -nao', stdout=PIPE)
         p2 = subprocess.Popen('findstr /c:*:*', stdin=p1.stdout, stdout=outfile)
+    logfile.write('UDP Netstat Raw Module           Passed\n')
         
     
     #Get Network Listeners CSV
@@ -360,7 +371,6 @@ def collection():
             line.pop(4)
             udp_listen.write(",".join(line) + '\n')
         elif line and line[0] == "TCP" and line[3] == "LISTENING":
-            print "why stop? \n"
             try:
                 process = Process(int(line[4]))
                 try:
@@ -388,6 +398,7 @@ def collection():
             udp_listen.write(",".join(line) + '\n')
     tcp_listen.close
     udp_listen.close
+    logfile.write('Listeners CSV Module             Passed\n')
 
     #get local users and group membership
     users = NetUserEnum(None,2)
@@ -412,8 +423,9 @@ def collection():
                              time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['last_logon'])),
                              groups))
         sqlfile.write(line)
+    logfile.write('Local User and Group Module      Passed\n')
     
-    #get AD groups and membership if DC present
+    #get AD Users and membership if DC present
     try:
         dc = NetGetDCName()
         header = 'DC,name,full_name,password_age,num_logons,acct_expires,last_logon,groups\n'
@@ -435,7 +447,9 @@ def collection():
                                 time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(users[0][x]['last_logon'])),
                                 groups))
                 sqlfile.write(line)#code
+        logfile.write('AD Users Module                  Passed\n')
     except:
+        logfile.write('AD Users Module                  Failed/No Domain\n')    
         pass
     
         
@@ -457,6 +471,7 @@ def collection():
             groups[x] = ",".join((groups[x], temp[0][y]['name']))
         groups[x] = ",".join((ipaddr, groups[x], "\n"))
         sqlfile.write(groups[x])
+    logfile.write('Local group Module               Passed\n')
     
     
     #get AD groups and membership if DC present
@@ -477,7 +492,9 @@ def collection():
                 adgroup = dc + "," + str(groups[0][x]['name']) + "," + ",".join(adgroups) + "\n"
                 sqlfile.write(adgroup)
                 adgroups = []
+        logfile.write('AD Group Module                  Passed\n')
     except:
+        logfile.write('AD Group Module                  Failed/No Domain\n')    
         pass
     
     
@@ -489,11 +506,13 @@ def collection():
     for x in range(len(line[0])):
         share = ",".join((ipaddr, str(line[0][x]['netname']), str(line[0][x]['path']), "\n"))
         sqlfile.write(share)
+    logfile.write("Local Share Module               Passed\n")
 
         
     #Get password policy
     with open(bname + '-password-policy.txt', 'w') as outfile:
         subprocess.call('net.exe accounts', stdout=outfile)
+    logfile.write('Password Policy Module           Passed\n')
     """
     Add post processing
     """
@@ -504,7 +523,9 @@ def collection():
             subprocess.call('nbtstat.exe -r', stdout=outfile)
         with open(bname + '-nbtstat-remotesessions.txt', 'w') as outfile:
             subprocess.call('nbtstat.exe -S', stdout=outfile)
+        logfile.write('NBTSTAT Module                   Passed\n')
     except:
+        logfile.write('NBTSTAT Module                   Failed/64bit System?\n')
         pass
         #with open(bname + '-nbtstat-cachednames.txt', 'w') as outfile:
         #    subprocess.call('nbtstat.exe -r', stdout=outfile)
@@ -514,49 +535,151 @@ def collection():
     #get firewall info
     with open(bname + '-firewall-config', 'w') as outfile:
         subprocess.call('netsh.exe firewall show config', stdout=outfile)
+    logfile.write('firewall module                  Passed\n')
     """
     Add post processing
     """
 
 
     #Get task / process list
-    with open(bname + '-tasks-tasklist.txt', 'w') as outfile:
-        subprocess.call('tasklist.exe', stdout=outfile)
-    with open(bname + '-tasks-wmic.txt', 'w') as outfile:
-        subprocess.call('wmic.exe process list', stdout=outfile)
-    with open(bname + '-tasks-pslist-tree.txt', 'w') as outfile:
-        subprocess.call('pslist.exe -t', stdout=outfile)
-    with open(bname + '-tasks-pslist-detailed.txt', 'w') as outfile:
-        subprocess.call('pslist.exe -x', stdout=outfile)
+    try:
+        with open(bname + '-tasks-tasklist.txt', 'w') as outfile:
+            subprocess.call('tasklist.exe', stdout=outfile)
+        logfile.write('tasklist module                  Passed\n')
+    except:
+        logfile.write('tasklist module                  failed\n')
+    
+    
+    try:
+        with open(bname + '-tasks-wmic.txt', 'w') as outfile:
+            subprocess.call('wmic.exe process list', stdout=outfile)
+        logfile.write('wmic tasks module                Passed\n')
+    except:
+        logfile.write('wmic tasks module                Failed\n')
+        
+        
+    try:
+        with open(bname + '-tasks-pslist-tree.txt', 'w') as outfile:
+            subprocess.call('pslist.exe -t', stdout=outfile)
+        logfile.write('pslist task tree module          Passed\n')
+    except:
+        logfile.write('pslist task tree module          Failed\n')
+        
+        
+    try:
+        with open(bname + '-tasks-pslist-detailed.txt', 'w') as outfile:
+            subprocess.call('pslist.exe -x', stdout=outfile)
+        logfile.write('pslist detailed module           Passed\n')
+    except:
+        logfile.write('pslist detailed module           Failed\n')
     """
     Add post processing
     """
     
     #sysinternals
-    with open(bname + '-whois-loggedon.txt', 'w') as outfile:
-        subprocess.call('psloggedon.exe', stdout=outfile)
-    with open(bname + '-local-services.txt', 'w') as outfile:
-        subprocess.call('psservice.exe', stdout=outfile)
-    with open(bname + '-services-config.txt', 'w') as outfile:
-        subprocess.call('psservice.exe config', stdout=outfile)
-    with open(sqlname + '-tcpview.csv', 'w') as outfile:
-        subprocess.call('tcpvcon.exe -a -c -n', stdout=outfile)
-    with open(sqlname + '-system-event-log.csv', 'w') as outfile:
-        subprocess.call('psloglist.exe -s system', stdout=outfile)
-    with open(sqlname + '-application-event-log.csv', 'w') as outfile:
-        subprocess.call('psloglist.exe -s application', stdout=outfile)
-    with open(sqlname + '-security-event-log.csv', 'w') as outfile:
-        subprocess.call('psloglist.exe -s security', stdout=outfile)
-    with open(sqlname + '-autoruns.csv', 'w') as outfile:
-        subprocess.call('autorunsc.exe -a -c -m', stdout=outfile)
-    with open(bname + '-open-handles.txt', 'w') as outfile:
-        subprocess.call('handle.exe -a', stdout=outfile)
-    with open(bname + '-logonsessions.txt', 'w') as outfile:
-        subprocess.call('logonsessions.exe', stdout=outfile)
-    with open(bname + '-files-opened-remotely.txt', 'w') as outfile:
-        subprocess.call('psfile.exe', stdout=outfile)
-    with open(sqlname + '-installed-apps-patches.csv', 'w') as outfile:
-        subprocess.call('psinfo.exe', stdout=outfile)
+    try:
+        with open(bname + '-whois-loggedon.txt', 'w') as outfile:
+            subprocess.call('psloggedon.exe', stdout=outfile)
+        logfile.write('loggedon module                  Passed\n')
+    except:
+        logfile.write('loggedon Module                  Failed\n')
+        
+        
+    try:
+        with open(bname + '-local-services.txt', 'w') as outfile:
+            subprocess.call('psservice.exe', stdout=outfile)
+        logfile.write('PSservices List Module           Passed\n')
+    except:
+        logfile.write('PSservices List Module           Failed\n')
+        
+        
+    try:
+        with open(bname + '-services-config.txt', 'w') as outfile:
+            subprocess.call('psservice.exe config', stdout=outfile)
+        logfile.write('PSservices detailed Module       Passed\n')
+    except:
+        logfile.write('PSservices detailed Module       Failed\n')
+        
+        
+        
+    try:
+        with open(sqlname + '-tcpview.csv', 'w') as outfile:
+            subprocess.call('tcpvcon.exe -a -c -n', stdout=outfile)
+        logfile.write('tcpview csv module               Passed\n')
+    except:
+        logfile.write('tcpview csv module               Failed\n')
+        
+        
+        
+    try:
+        with open(sqlname + '-system-event-log.csv', 'w') as outfile:
+            subprocess.call('psloglist.exe -s system', stdout=outfile)
+        logfile.write('System Event Log Module          Passed\n')
+    except:
+        logfile.write('System Event Log Module          Failed\n')
+        
+        
+        
+    try:
+        with open(sqlname + '-application-event-log.csv', 'w') as outfile:
+            subprocess.call('psloglist.exe -s application', stdout=outfile)
+        logfile.write('Application Event Log Module     Passed\n')
+    except:
+        logfile.write('Application Event Log Module     Failed\n')
+        
+        
+        
+    try:
+        with open(sqlname + '-security-event-log.csv', 'w') as outfile:
+            subprocess.call('psloglist.exe -s security', stdout=outfile)
+        logfile.write('Security Event Log Module        Passed\n')
+    except:
+        logfile.write('Security Event Log Module        Failed\n')
+        
+        
+        
+    try:
+        with open(sqlname + '-autoruns.csv', 'w') as outfile:
+            subprocess.call('autorunsc.exe -a -c -m', stdout=outfile)
+        logfile.write('Autoruns Module                  Passed\n')
+    except:
+        logfile.write('Autoruns Module                  Failed\n')
+        
+        
+        
+    try:
+        with open(bname + '-open-handles.txt', 'w') as outfile:
+            subprocess.call('handle.exe -a', stdout=outfile)
+        logfile.write('Open Handles Module              Passed\n')
+    except:
+        logfile.write('Open Handles Module              Failed\n')
+        
+        
+        
+    try:
+        with open(bname + '-logonsessions.txt', 'w') as outfile:
+            subprocess.call('logonsessions.exe', stdout=outfile)
+        logfile.write('logonsessions Module             Passed\n')
+    except:
+        logfile.write('logonsessions Module             Failed\n')
+        
+        
+        
+    try:
+        with open(bname + '-files-opened-remotely.txt', 'w') as outfile:
+            subprocess.call('psfile.exe', stdout=outfile)
+        logfile.write('remote open files module         Passed\n')
+    except:
+        logfile.write('remote open files module         Failed\n')
+        
+        
+        
+    try:
+        with open(sqlname + '-installed-apps-patches.csv', 'w') as outfile:
+            subprocess.call('psinfo.exe', stdout=outfile)
+        logfile.write('Installed Apps/Patches Module    Passed\n')
+    except:
+        logfile.write('Installed Apps/Patches Module    Failed\n')
     """
     Add post processing
     """
