@@ -559,7 +559,7 @@ def collection():
         
     try:
         with open(bname + '-tasks-pslist-tree.txt', 'w') as outfile:
-            subprocess.call('pslist.exe -t', stdout=outfile)
+            subprocess.call(path + 'pslist.exe -t', stdout=outfile)
         logfile.write('pslist task tree module          Passed\n')
     except:
         logfile.write('pslist task tree module          Failed\n')
@@ -567,7 +567,7 @@ def collection():
         
     try:
         with open(bname + '-tasks-pslist-detailed.txt', 'w') as outfile:
-            subprocess.call('pslist.exe -x', stdout=outfile)
+            subprocess.call(path + 'pslist.exe -x', stdout=outfile)
         logfile.write('pslist detailed module           Passed\n')
     except:
         logfile.write('pslist detailed module           Failed\n')
@@ -578,7 +578,7 @@ def collection():
     #sysinternals
     try:
         with open(bname + '-whois-loggedon.txt', 'w') as outfile:
-            subprocess.call('psloggedon.exe', stdout=outfile)
+            subprocess.call(path + 'psloggedon.exe', stdout=outfile)
         logfile.write('loggedon module                  Passed\n')
     except:
         logfile.write('loggedon Module                  Failed\n')
@@ -586,7 +586,7 @@ def collection():
         
     try:
         with open(bname + '-local-services.txt', 'w') as outfile:
-            subprocess.call('psservice.exe', stdout=outfile)
+            subprocess.call(path + 'psservice.exe', stdout=outfile)
         logfile.write('PSservices List Module           Passed\n')
     except:
         logfile.write('PSservices List Module           Failed\n')
@@ -594,7 +594,7 @@ def collection():
         
     try:
         with open(bname + '-services-config.txt', 'w') as outfile:
-            subprocess.call('psservice.exe config', stdout=outfile)
+            subprocess.call(path + 'psservice.exe config', stdout=outfile)
         logfile.write('PSservices detailed Module       Passed\n')
     except:
         logfile.write('PSservices detailed Module       Failed\n')
@@ -603,7 +603,7 @@ def collection():
         
     try:
         with open(sqlname + '-tcpview.csv', 'w') as outfile:
-            subprocess.call('tcpvcon.exe -a -c -n', stdout=outfile)
+            subprocess.call(path + 'tcpvcon.exe -a -c -n', stdout=outfile)
         logfile.write('tcpview csv module               Passed\n')
     except:
         logfile.write('tcpview csv module               Failed\n')
@@ -612,7 +612,7 @@ def collection():
         
     try:
         with open(sqlname + '-system-event-log.csv', 'w') as outfile:
-            subprocess.call('psloglist.exe -s system', stdout=outfile)
+            subprocess.call(path + 'psloglist.exe -s system', stdout=outfile)
         logfile.write('System Event Log Module          Passed\n')
     except:
         logfile.write('System Event Log Module          Failed\n')
@@ -621,7 +621,7 @@ def collection():
         
     try:
         with open(sqlname + '-application-event-log.csv', 'w') as outfile:
-            subprocess.call('psloglist.exe -s application', stdout=outfile)
+            subprocess.call(path + 'psloglist.exe -s application', stdout=outfile)
         logfile.write('Application Event Log Module     Passed\n')
     except:
         logfile.write('Application Event Log Module     Failed\n')
@@ -630,7 +630,7 @@ def collection():
         
     try:
         with open(sqlname + '-security-event-log.csv', 'w') as outfile:
-            subprocess.call('psloglist.exe -s security', stdout=outfile)
+            subprocess.call(path + 'psloglist.exe -s security', stdout=outfile)
         logfile.write('Security Event Log Module        Passed\n')
     except:
         logfile.write('Security Event Log Module        Failed\n')
@@ -639,7 +639,7 @@ def collection():
         
     try:
         with open(sqlname + '-autoruns.csv', 'w') as outfile:
-            subprocess.call('autorunsc.exe -a -c -m', stdout=outfile)
+            subprocess.call(path + 'autorunsc.exe -a -c -m', stdout=outfile)
         logfile.write('Autoruns Module                  Passed\n')
     except:
         logfile.write('Autoruns Module                  Failed\n')
@@ -648,7 +648,7 @@ def collection():
         
     try:
         with open(bname + '-open-handles.txt', 'w') as outfile:
-            subprocess.call('handle.exe -a', stdout=outfile)
+            subprocess.call(path + 'handle.exe -a', stdout=outfile)
         logfile.write('Open Handles Module              Passed\n')
     except:
         logfile.write('Open Handles Module              Failed\n')
@@ -657,7 +657,7 @@ def collection():
         
     try:
         with open(bname + '-logonsessions.txt', 'w') as outfile:
-            subprocess.call('logonsessions.exe', stdout=outfile)
+            subprocess.call(path + 'logonsessions.exe', stdout=outfile)
         logfile.write('logonsessions Module             Passed\n')
     except:
         logfile.write('logonsessions Module             Failed\n')
@@ -666,7 +666,7 @@ def collection():
         
     try:
         with open(bname + '-files-opened-remotely.txt', 'w') as outfile:
-            subprocess.call('psfile.exe', stdout=outfile)
+            subprocess.call(path + 'psfile.exe', stdout=outfile)
         logfile.write('remote open files module         Passed\n')
     except:
         logfile.write('remote open files module         Failed\n')
@@ -675,7 +675,7 @@ def collection():
         
     try:
         with open(sqlname + '-installed-apps-patches.csv', 'w') as outfile:
-            subprocess.call('psinfo.exe', stdout=outfile)
+            subprocess.call(path + 'psinfo.exe', stdout=outfile)
         logfile.write('Installed Apps/Patches Module    Passed\n')
     except:
         logfile.write('Installed Apps/Patches Module    Failed\n')
