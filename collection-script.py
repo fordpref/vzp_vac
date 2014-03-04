@@ -50,14 +50,18 @@ def date_time_stamp():
     cal_time = ""
     whole = ""
     zone = ""
+    splittz = []
     
     whole = str(datetime.now()).split(" ")
     cal_date = whole[0]
     cal_date = cal_date.replace("-", ".")
     cal_time = whole[1].split(":")
-    zone = time.timezone if (time.localtime().tm_isdst == 0) else time.altzone
-    zone = zone / 60 / 60 * -1
-    date = cal_date + "-" + cal_time[0] + cal_time[1] + "GMT" + str(zone)
+    #zone = time.timezone if (time.localtime().tm_isdst == 0) else time.altzone
+    #zone = zone / 60 / 60 * -1
+    zone = time.strftime("%z")
+    splittz = zone.split(" ")
+    zone = splittz[0][:1] + splittz[1][:1] + splittz[2][:1]    
+    date = cal_date + "-" + cal_time[0] + cal_time[1] + zone
     return date
     
 def get_os():
@@ -267,72 +271,6 @@ def collection():
         subprocess.call('netstat.exe -nr ', stdout=outfile)
     logfile.write('IP Route Raw Module              Passed\n')
     
-    #insert IP ROUTING csv table here
-    infile = open(bname + '-Routes.txt', 'r')
-    for line in infile:
-        if line.startswith('Network Destination'):
-            headers = line.split()
-            headers[0] = 'key/ip'
-            headers = ",".join(headers)
-            flag = 1
-            outfile = open(sqlname + '-ipv4-route-table.csv', 'w')
-            outfile.write(headers + '\n')
-        elif line.startswith('Persistent') and flag2 == 0:
-            flag = 2
-            flag2 = 1
-        elif line.startswith('Persistent') and flag2 == 1:
-            flag = 5
-            flag2 = 0
-        elif line.startswith('Active'):
-            flag = 4
-        elif line.startswith('=') and flag == 1:
-            flag = 0
-            outfile.close
-        elif flag == 1:
-            route = line.split()
-            if flag3 == 1 and len(route) == 3:
-                route.append('On-link')
-                flag3 = 2
-            if flag3 == 2 and len(route) == 1:
-                flag3 = 3
-            
-            if flag == 1 and (flag3 == 0 or flag3 == 1 or flag3 == 2):                
-                route = ",".join(route)
-                outfile.write(ipaddr + ',' + route + "\n")
-            elif flag3 == 3:
-                flag3 = 1
-        elif flag == 2:
-            headers = line.split()
-            if len(headers) == 1:
-                headers[0] = 'key/ip'
-                headers.append('Destination\n')
-                headers = ",".join(headers)
-                outfile = open(sqlname + '-ipv4-persistent-routes.csv', 'w')
-                outfile.write(headers)
-                outfile.write(ipaddr + "," + "None")
-                flag = 0
-            else:
-                headers[0] = 'key/IP'
-                headers[1] = 'Destination'
-                headers.pop(4)
-                headers = ",".join(headers)
-                outfile = open(sqlname + '-ipv4-persistent-routes.csv', 'w')
-                outfile.write(headers + '\n')
-                flag = 1
-        elif flag == 4:
-            headers = line.split()
-            headers.insert(0, 'key/ip')
-            headers.pop(3)
-            headers = ",".join(headers)
-            outfile = open(sqlname + '-ipv6-routes.csv', 'w')
-            outfile.write(headers + '\n')
-            flag = 1
-            flag3 = 1
-        elif flag == 5:
-            outfile = open(sqlname + '-ipv6-persistent-routes.csv', 'w')
-            outfile.write(line)
-            outfile.write('\nIf there are IPV6 persistent routes, capture and re-write this module')
-    logfile.write('IP route CSV Module              Passed\n')
     
     #Get Network Listeners Raw
     with open(bname + '-TCP-NetworkListeners.txt', 'w') as outfile:
