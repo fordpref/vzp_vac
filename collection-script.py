@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-import sys, os, time, platform, socket, _winreg, subprocess, win32security
+import sys, os, time, platform, socket, _winreg, subprocess, win32security, msvcrt
 from datetime import datetime
 from subprocess import PIPE
 from win32netcon import *
 from psutil import *
 from win32net import *
+from win32wnet import *
+
 
 
 
@@ -24,6 +26,8 @@ dir = ""
 sqldir = ""
 reg = ""
 registry = {}
+outputpath = ''
+
 
 
 def get_tool_path():
@@ -41,6 +45,24 @@ def get_tool_path():
         print "Invalid path, tools not found"
         path = get_tool_path()
     return path
+
+def get_output_path():
+
+    path = raw_input('Default output path is c:\\assessment\\. \nHit enter to keep or type new path/unc to change: ')
+    if path.startswith('\\'):
+        user = raw_input('username: ')
+        password = raw_input('password: ')
+        outpath = WNet32addconnection2(['RESOURCETYPE_DISK','O:',path,''],password,username)
+        return outpath
+    elif path == '':
+        return 'c:\assessment'
+    else:
+        if os.path.exists(path):
+            return path
+        else:
+            print 'That path doesn\'t exist, try again.'
+            get_output_path()
+        
 
 def date_time_stamp():
     """
@@ -190,6 +212,7 @@ def collection():
     bname = dir + aname
     sqlname = sqldir + aname
     logfile = open(dir + "assessment-log.txt", 'w')
+    skip = 0
     
     
     #Start by getting System Info
@@ -297,6 +320,11 @@ def collection():
     netstat = subprocess.Popen('netstat.exe -nao', stdout=PIPE, stderr=PIPE)
     netstat = netstat.communicate()[0].split("\n")
     for line in netstat:
+        print 'Hit "c" to skip if needed...\n'
+        if msvcrt.kbhit():
+            if ord(msvcrt.getch()) == 99 or ord(msvcrt.getch()) == 67:
+                skip = 1
+                break
         line = line.split()
         
         if line and line[0] == "Proto":
@@ -335,7 +363,11 @@ def collection():
             udp_listen.write(",".join(line) + '\n')
     tcp_listen.close
     udp_listen.close
-    logfile.write('Listeners CSV Module             Passed\n')
+    if skip == 1:
+        logfile.write('Listeners CSV Module             SKIPPED\n')
+        skip = 0
+    else:
+        logfile.write('Listeners CSV Module             Passed\n')
 
     #get local users and group membership
     users = NetUserEnum(None,2)
@@ -641,6 +673,9 @@ print "delete the temporary files here automatically."
 
 #first get the path to the tools needed
 path = get_tool_path()
+
+#now get output path
+outputpath = get_output_path()
 
 #get the date and time and format it
 date = date_time_stamp()
